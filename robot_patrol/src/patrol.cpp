@@ -20,7 +20,7 @@ public:
         publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
         // Timer
         timer_ = this->create_wall_timer(
-            std::chrono::milliseconds(200),
+            std::chrono::milliseconds(100),
             std::bind(&Patrol::publishVel, this));
         // Pi
         pi_ = std::atan2(0, -1);
@@ -29,25 +29,53 @@ private:
     // Private methods
     void laserCallback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
         RCLCPP_INFO(this->get_logger(), "Reading laser data");
-        int size = static_cast<int>(msg->ranges.size());
-        float max_value = static_cast<float>(msg->range_max);
-        float far_object = 0;
-        direction_ = 0;
-        for (int i = size * 0.25; i < size * 0.75; i++) {
-            if (max_value >= msg->ranges[i] && msg->ranges[i] > far_object) {
-                far_object = msg->ranges[i];
-                direction_ = -((2 * static_cast<float>(i - i * 0.25) / size) * pi_ - (pi_ / 2));
+        float laser_idx = 0;
+        int range_size = int(msg->ranges.size());
+        float laser_max = float(msg->range_max);
+        float farthest_object = 0;
+        closest_object_ = laser_max;
+        // Scan ranges front to left
+        for (int i = 0; i < int(range_size * 0.25); i++) {
+            if (laser_max > msg->ranges[i] && msg->ranges[i] > farthest_object) {
+                farthest_object = msg->ranges[i];
+                laser_idx = i;
+            }
+            if (i < int(range_size * 0.125) && msg->ranges[i] < closest_object_) {
+                closest_object_ = msg->ranges[i];
+                closest_avoidance = -1;
             }
         }
-        RCLCPP_INFO(this->get_logger(), "The furthest object is at: %.2f m", far_object);
+        // Scan ranges right to front
+        for (int i = int(range_size * 0.75); i < range_size; i++) {
+            if (laser_max > msg->ranges[i] && msg->ranges[i] > farthest_object) {
+                farthest_object = msg->ranges[i];
+                laser_idx = -(range_size - i);
+            }
+            if (i > int(range_size * 0.875) && msg->ranges[i] < closest_object_) {
+                closest_object_ = msg->ranges[i];
+                closest_avoidance = 1;
+            }
+        }
+        direction_ = laser_idx * 2 * pi_ / range_size;
+        RCLCPP_INFO(this->get_logger(), "The farthest object is at: %.2f m", farthest_object);
+        RCLCPP_INFO(this->get_logger(), "The closest object is at: %.2f m", closest_object_);
         RCLCPP_INFO(this->get_logger(), "The direction is : %.2f radians", direction_);
         RCLCPP_INFO(this->get_logger(), "The direction is : %.2f degrees", direction_ * 180 / pi_);
+        
     }
     void publishVel() {
         RCLCPP_INFO(this->get_logger(), "Publishing angular velocity of : %.2f rad/s", direction_ / 2);
         geometry_msgs::msg::Twist vel_message;
-        vel_message.linear.x = 0.1;
-        vel_message.angular.z = direction_ / 2;
+        
+        if (closest_object_ > 0.25) {
+            vel_message.linear.x = 0.1;
+            vel_message.angular.z = direction_ / 2;
+        }
+        else {
+            vel_message.linear.x = 0.0;
+            vel_message.angular.z = closest_avoidance * 0.5;
+        }
+        
         publisher_->publish(vel_message);
     }
 
@@ -56,6 +84,8 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;
     rclcpp::TimerBase::SharedPtr timer_;
     float direction_;
+    float closest_object_;
+    int closest_avoidance;
     float pi_;
 };
 
