@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -26,7 +27,7 @@ endif()
 add_executable(patrol src/patrol.cpp)
 
 # Target dependencies
-ament_target_dependencies(patrol rclcpp sensor_msgs)
+ament_target_dependencies(patrol rclcpp sensor_msgs geometry_msgs)
 
 # Install targets
 install(TARGETS
@@ -39,6 +40,6 @@ install(DIRECTORY
 )
 
 # Export dependencies
-ament_export_dependencies(ament_cmake rclcpp sensor_msgs) 
+ament_export_dependencies(ament_cmake rclcpp sensor_msgs geometry_msgs) 
 
 ament_package()
