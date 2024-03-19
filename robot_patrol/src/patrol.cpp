@@ -34,29 +34,50 @@ private:
         float laser_max = float(msg->range_max);
         float farthest_object = 0;
         closest_object_ = laser_max;
-        // Scan ranges front to left
-        for (int i = 0; i < int(range_size * 0.25); i++) {
+        // SIMULATED ROBOT 
+        // Scan ranges front to left 
+        // for (int i = 0; i < int(range_size * 0.25); i++) {
+        //     if (laser_max > msg->ranges[i] && msg->ranges[i] > farthest_object) {
+        //         farthest_object = msg->ranges[i];
+        //         laser_idx = i;
+        //     }
+        //     if (i < int(range_size * 0.125) && msg->ranges[i] < closest_object_) {
+        //         closest_object_ = msg->ranges[i];
+        //         avoidance_direction_ = -1;
+        //     }
+        // }
+        // // Scan ranges right to front
+        // for (int i = int(range_size * 0.75); i < range_size; i++) {
+        //     if (laser_max > msg->ranges[i] && msg->ranges[i] > farthest_object) {
+        //         farthest_object = msg->ranges[i];
+        //         laser_idx = -(range_size - i);
+        //     }
+        //     if (i > int(range_size * 0.875) && msg->ranges[i] < closest_object_) {
+        //         closest_object_ = msg->ranges[i];
+        //         avoidance_direction_ = 1;
+        //     }
+        // }
+        // direction_ = laser_idx * 2 * pi_ / range_size; 
+        
+        // REAL ROBOT
+        for (int i = int(range_size * 0.25); i < int(range_size * 0.75); i++) {
             if (laser_max > msg->ranges[i] && msg->ranges[i] > farthest_object) {
-                farthest_object = msg->ranges[i];
-                laser_idx = i;
+                 farthest_object = msg->ranges[i];
+                 laser_idx = i;
             }
-            if (i < int(range_size * 0.125) && msg->ranges[i] < closest_object_) {
-                closest_object_ = msg->ranges[i];
-                closest_avoidance = -1;
+            if (msg->ranges[i] < closest_object_) {
+                 closest_object_ = msg->ranges[i];
+                 if (i < range_size * 0.5) {
+                    avoidance_direction_ = 1;
+                 }
+                 else {
+                    avoidance_direction_ = -1;
+                 }
             }
         }
-        // Scan ranges right to front
-        for (int i = int(range_size * 0.75); i < range_size; i++) {
-            if (laser_max > msg->ranges[i] && msg->ranges[i] > farthest_object) {
-                farthest_object = msg->ranges[i];
-                laser_idx = -(range_size - i);
-            }
-            if (i > int(range_size * 0.875) && msg->ranges[i] < closest_object_) {
-                closest_object_ = msg->ranges[i];
-                closest_avoidance = 1;
-            }
-        }
-        direction_ = laser_idx * 2 * pi_ / range_size;
+        laser_idx -= range_size * 0.5;
+        direction_ = laser_idx * pi_ / (range_size * 0.5); 
+
         RCLCPP_INFO(this->get_logger(), "The farthest object is at: %.2f m", farthest_object);
         RCLCPP_INFO(this->get_logger(), "The closest object is at: %.2f m", closest_object_);
         RCLCPP_INFO(this->get_logger(), "The direction is : %.2f radians", direction_);
@@ -64,7 +85,6 @@ private:
         
     }
     void publishVel() {
-        RCLCPP_INFO(this->get_logger(), "Publishing angular velocity of : %.2f rad/s", direction_ / 2);
         geometry_msgs::msg::Twist vel_message;
         
         if (closest_object_ > 0.25) {
@@ -73,9 +93,11 @@ private:
         }
         else {
             vel_message.linear.x = 0.0;
-            vel_message.angular.z = closest_avoidance * 0.5;
+            vel_message.angular.z = avoidance_direction_ * 0.25;
         }
-        
+
+        RCLCPP_INFO(this->get_logger(), "Publishing linear velocity of : %.2f m/s", vel_message.linear.x);
+        RCLCPP_INFO(this->get_logger(), "Publishing angular velocity of : %.2f rad/s", vel_message.angular.z);
         publisher_->publish(vel_message);
     }
 
@@ -85,7 +107,7 @@ private:
     rclcpp::TimerBase::SharedPtr timer_;
     float direction_;
     float closest_object_;
-    int closest_avoidance;
+    int avoidance_direction_;
     float pi_;
 };
 
