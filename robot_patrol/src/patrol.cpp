@@ -33,47 +33,43 @@ private:
         float farthest_object = 0;
         closest_object_ = laser_max;
         // SIMULATED ROBOT
-        front_reading_ = msg->ranges[0];
+        // front_reading_ = msg->ranges[0];
+        // for (int i = 0; i < range_size; i++) {
+        //     if ((i < 0.25 * range_size) || (i >= 0.75 * range_size)) {
+        //         if (msg->ranges[i] <= laser_max && msg->ranges[i] > farthest_object) {
+        //             farthest_object = msg->ranges[i];
+        //             laser_idx = i < 0.25 * range_size ? i : i - range_size;
+        //         }
+        //         if (msg->ranges[i] < closest_object_ && (i < range_size * 0.125 || i > range_size * 0.875 )) {
+        //             closest_object_ = msg->ranges[i];
+        //             avoidance_direction_ = i < 0.25 * range_size ? -1 : 1;
+        //         }
+        //     }
+        // }
+
+        // REAL ROBOT
+        front_reading_ = msg->ranges[range_size * 0.5];
         for (int i = 0; i < range_size; i++) {
-            if ((i < 0.25 * range_size) || (i >= 0.75 * range_size)) {
+            if ((i >= 0.25 * range_size) || (i < 0.75 * range_size)) {
                 if (msg->ranges[i] <= laser_max && msg->ranges[i] > farthest_object) {
                     farthest_object = msg->ranges[i];
-                    laser_idx = i;
-                    laser_idx = i < 0.25 * range_size ? i : i - range_size;
+                    laser_idx = i - range_size * 0.5;
                 }
-                if (msg->ranges[i] < closest_object_ && (i < range_size * 0.125 || i > range_size * 0.875 )) {
+                if (msg->ranges[i] < closest_object_ && (i < range_size * 0.625 && i > range_size * 0.375 )) {
                     closest_object_ = msg->ranges[i];
-                    avoidance_direction_ = i < 0.25 * range_size ? -1 : 1;
+                    avoidance_direction_ = i < 0.5 * range_size ? 1 : -1;
                 }
             }
         }
 
-        // REAL ROBOT
-        // for (int i = int(range_size * 0.25); i < int(range_size * 0.75); i++) {
-        //     if (laser_max > msg->ranges[i] && msg->ranges[i] > farthest_object) {
-        //          farthest_object = msg->ranges[i];
-        //          laser_idx = i;
-        //     }
-        //     if (msg->ranges[i] < closest_object_) {
-        //          closest_object_ = msg->ranges[i];
-        //          if (i < range_size * 0.5) {
-        //             avoidance_direction_ = 1;
-        //          }
-        //          else {
-        //             avoidance_direction_ = -1;
-        //          }
-        //     }
-        // }
-        // laser_idx -= range_size * 0.5;
-        
         direction_ = laser_idx * 2 * pi_ / range_size;
 
         RCLCPP_INFO(this->get_logger(), "The farthest object is at: %.2f m", farthest_object);
         RCLCPP_INFO(this->get_logger(), "The closest object is at: %.2f m", closest_object_);
         RCLCPP_INFO(this->get_logger(), "The direction is : %.2f radians", direction_);
         RCLCPP_INFO(this->get_logger(), "The direction is : %.2f degrees", direction_ * 180 / pi_);
-        
     }
+
     void publishVel() {
         geometry_msgs::msg::Twist vel_message;
         
@@ -83,7 +79,7 @@ private:
         }
         else if (closest_object_ > proximity_threshold && front_reading_ < proximity_threshold * 2){
             vel_message.linear.x = 0.05;
-            vel_message.angular.z = direction_;
+            vel_message.angular.z = direction_ / 2;
         }
         else {
             vel_message.linear.x = 0.0;
