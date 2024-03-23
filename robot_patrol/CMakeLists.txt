@@ -10,6 +10,13 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(robot_patrol REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/GetDirection.srv"
+  DEPENDENCIES sensor_msgs
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -25,14 +32,18 @@ endif()
 
 # Excecutables
 add_executable(patrol src/patrol.cpp)
+add_executable(direction_service src/direction_service.cpp)
+add_executable(test_service src/test_service.cpp)
 
 # Target dependencies
 ament_target_dependencies(patrol rclcpp sensor_msgs geometry_msgs)
+ament_target_dependencies(direction_service rclcpp robot_patrol)
+ament_target_dependencies(test_service rclcpp robot_patrol sensor_msgs)
 
 # Install targets
-install(TARGETS
-  patrol
-  DESTINATION lib/${PROJECT_NAME})
+install(TARGETS patrol DESTINATION lib/${PROJECT_NAME})
+install(TARGETS direction_service DESTINATION lib/${PROJECT_NAME})
+install(TARGETS test_service DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY
   launch
