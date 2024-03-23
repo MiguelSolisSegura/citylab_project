@@ -51,19 +51,19 @@ private:
         int idx = right_idx;
         int half_array = array_size / 2;
         for (int i = 0; i < half_array; i++) {
-            if ((i < half_array / 3) && (request->laser_data.ranges[idx] < range_max)) {
+            if ((i < half_array / 3) && (request->laser_data.ranges[idx] <= range_max)) {
                 total_dist_sec_right += request->laser_data.ranges[idx];
             }
-            else if ((i < 2 * half_array / 3) && (request->laser_data.ranges[idx] < range_max)) {
+            else if ((i < 2 * half_array / 3) && (request->laser_data.ranges[idx] <= range_max)) {
                 total_dist_sec_front += request->laser_data.ranges[idx];
             }
-            else if ((i >= 2 * half_array) && (request->laser_data.ranges[idx] < range_max)) {
+            else if ((i >= 2 * half_array / 3) && (request->laser_data.ranges[idx] <= range_max)) {
                 total_dist_sec_left += request->laser_data.ranges[idx];
             }
             idx++;
             if (idx >= array_size) {idx = 0;}
         }
-        if (total_dist_sec_right > total_dist_sec_front && total_dist_sec_right > total_dist_sec_left) {
+        if ((total_dist_sec_right > total_dist_sec_front) && (total_dist_sec_right > total_dist_sec_left)) {
             response->direction = "right";
         }
         else {

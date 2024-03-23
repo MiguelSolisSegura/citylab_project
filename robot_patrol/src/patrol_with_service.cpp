@@ -87,8 +87,6 @@ private:
                 vel_message.angular.z = 0.0;
             }
         }
-        RCLCPP_INFO(this->get_logger(), "Publishing linear velocity of : %.2f m/s", vel_message.linear.x);
-        RCLCPP_INFO(this->get_logger(), "Publishing angular velocity of : %.2f rad/s", vel_message.angular.z);
         publisher_->publish(vel_message);
     }
 
