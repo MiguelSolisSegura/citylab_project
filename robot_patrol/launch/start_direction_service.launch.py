@@ -12,6 +12,6 @@ def generate_launch_description():
             executable='direction_service',
             name='direction_service',
             output='screen',
-            parameters=[{'right_index_multiplier': 0.25},],                                       
+            parameters=[{'right_index_multiplier': 0.75},],                                       
         ),
     ])
