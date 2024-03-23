@@ -7,5 +7,6 @@ def generate_launch_description():
             package='robot_patrol',
             executable='test_service',
             output='screen',
-            emulate_tty=True),
+            emulate_tty=True,
+            )
     ])

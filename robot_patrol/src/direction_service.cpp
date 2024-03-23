@@ -10,19 +10,28 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
+#include <iostream>
 
 using GetDirection = robot_patrol::srv::GetDirection;
 
 class DirectionService : public rclcpp::Node {
 public:
     // Methods
-    DirectionService(float right_index_multiplier) : rclcpp::Node::Node("direction_service") {
+    DirectionService() : rclcpp::Node::Node("direction_service") {
         using namespace std::placeholders;
         service_ = this->create_service<GetDirection>(
             "/direction_service", 
             std::bind(&DirectionService::handle_service, this, _1, _2));
 
-        this->right_index_multiplier_ = right_index_multiplier;
+        this->declare_parameter<float>("right_index_multiplier", 0.25);
+        this->get_parameter("right_index_multiplier", this->right_index_multiplier_);
+
+        if (this->right_index_multiplier_ == 0.75) {
+            RCLCPP_WARN(this->get_logger(), "Direction Service started in SIMULATION mode.");
+        }
+        else {
+            RCLCPP_WARN(this->get_logger(), "Direction Service started in REAL ROBOT mode.");
+        }
 
         RCLCPP_INFO(this->get_logger(), "Server started.");
     }
@@ -64,8 +73,7 @@ private:
 
 int main(int argc, char ** argv) {
     rclcpp::init(argc, argv);
-    float right_index_multiplier = 0.75;
-    auto node = std::make_shared<DirectionService>(right_index_multiplier);
+    auto node = std::make_shared<DirectionService>();
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;

@@ -1,6 +1,10 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
+# For the right_index_multiplier use:
+#  - 0.75 for simulation
+#  - 0.25 for real robot
+
 def generate_launch_description():
     return LaunchDescription([
         Node(
@@ -8,6 +12,6 @@ def generate_launch_description():
             executable='direction_service',
             name='direction_service',
             output='screen',
-            parameters=[{'right_index_multiplier': 0.25}],  # Ensure this matches your expected parameter
+            parameters=[{'right_index_multiplier': 0.75},],                                       
         ),
     ])
