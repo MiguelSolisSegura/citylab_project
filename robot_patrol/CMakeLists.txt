@@ -34,16 +34,19 @@ endif()
 add_executable(patrol src/patrol.cpp)
 add_executable(direction_service src/direction_service.cpp)
 add_executable(test_service src/test_service.cpp)
+add_executable(patrol_with_service src/patrol_with_service.cpp)
 
 # Target dependencies
 ament_target_dependencies(patrol rclcpp sensor_msgs geometry_msgs)
 ament_target_dependencies(direction_service rclcpp robot_patrol)
 ament_target_dependencies(test_service rclcpp robot_patrol sensor_msgs)
+ament_target_dependencies(patrol_with_service rclcpp robot_patrol sensor_msgs)
 
 # Install targets
 install(TARGETS patrol DESTINATION lib/${PROJECT_NAME})
 install(TARGETS direction_service DESTINATION lib/${PROJECT_NAME})
 install(TARGETS test_service DESTINATION lib/${PROJECT_NAME})
+install(TARGETS patrol_with_service DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY
   launch

@@ -23,7 +23,7 @@ public:
             "/direction_service", 
             std::bind(&DirectionService::handle_service, this, _1, _2));
 
-        this->declare_parameter<float>("right_index_multiplier", 0.25);
+        this->declare_parameter<float>("right_index_multiplier", 0.75);
         this->get_parameter("right_index_multiplier", this->right_index_multiplier_);
 
         if (this->right_index_multiplier_ == 0.75) {
@@ -44,19 +44,20 @@ private:
     void handle_service(const std::shared_ptr<GetDirection::Request> request, std::shared_ptr<GetDirection::Response> response) {
         int array_size = request->laser_data.ranges.size();
         int right_idx = array_size * right_index_multiplier_;
+        float range_max = request->laser_data.range_max;
         float total_dist_sec_right = 0;
         float total_dist_sec_front = 0;
         float total_dist_sec_left = 0;
         int idx = right_idx;
         int half_array = array_size / 2;
         for (int i = 0; i < half_array; i++) {
-            if (i < half_array / 3) {
+            if ((i < half_array / 3) && (request->laser_data.ranges[idx] < range_max)) {
                 total_dist_sec_right += request->laser_data.ranges[idx];
             }
-            else if (i < 2 * half_array / 3) {
+            else if ((i < 2 * half_array / 3) && (request->laser_data.ranges[idx] < range_max)) {
                 total_dist_sec_front += request->laser_data.ranges[idx];
             }
-            else {
+            else if ((i >= 2 * half_array) && (request->laser_data.ranges[idx] < range_max)) {
                 total_dist_sec_left += request->laser_data.ranges[idx];
             }
             idx++;
