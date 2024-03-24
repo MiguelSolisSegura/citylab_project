@@ -14,6 +14,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(robot_patrol REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(action_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetDirection.srv"
@@ -45,7 +46,7 @@ ament_target_dependencies(patrol rclcpp sensor_msgs geometry_msgs)
 ament_target_dependencies(direction_service rclcpp robot_patrol)
 ament_target_dependencies(test_service rclcpp robot_patrol sensor_msgs)
 ament_target_dependencies(patrol_with_service rclcpp robot_patrol sensor_msgs)
-ament_target_dependencies(go_to_pose_action rclcpp robot_patrol rclcpp_action geometry_msgs)
+ament_target_dependencies(go_to_pose_action rclcpp robot_patrol rclcpp_action geometry_msgs nav_msgs)
 
 # Install targets
 install(TARGETS patrol DESTINATION lib/${PROJECT_NAME})
