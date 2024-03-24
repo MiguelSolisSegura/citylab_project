@@ -16,10 +16,12 @@
 #include "rclcpp_action/types.hpp"
 #include "robot_patrol/action/go_to_pose.hpp"
 #include <cmath>
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <thread>
 #include <cmath>
+#include <algorithm>
 
 using Pose2D = geometry_msgs::msg::Pose2D;
 using Twist = geometry_msgs::msg::Twist;
@@ -77,7 +79,9 @@ private:
 
         // Orientation
         float angle_delta = INFINITY;
-        float goal_direction = computeVectorAngle(desired_pos_.x, desired_pos_.y);
+        float goal_direction = computeVectorAngle(
+            desired_pos_.x - current_pos_.x, 
+            desired_pos_.y - current_pos_.y);
 
         // Feedback
         auto feedback = std::make_shared<GoToPose::Feedback>();
@@ -88,16 +92,47 @@ private:
 
         // Rotate to target
         auto vel_msg = Twist();
-        
-        while (std::abs(angle_delta) > M_PI / 360) {
-            RCLCPP_INFO(this->get_logger(), "Goal direction: %.2f", goal_direction);
-            RCLCPP_INFO(this->get_logger(), "Current orientation: %.2f", current_pos_.theta);
+        while (std::abs(angle_delta) > M_PI / 90) {
+            goal_handle->publish_feedback(feedback);
+            RCLCPP_DEBUG(this->get_logger(), "Goal direction: %.2f", goal_direction);
+            RCLCPP_DEBUG(this->get_logger(), "Current orientation: %.2f", current_pos_.theta);
             angle_delta = goal_direction - current_pos_.theta;
-            RCLCPP_INFO(this->get_logger(), "Angle delta: %.2f", angle_delta);
+            RCLCPP_DEBUG(this->get_logger(), "Angle delta: %.2f", angle_delta);
             vel_msg.angular.z = angle_delta;
             publisher_->publish(vel_msg);
-            goal_handle->publish_feedback(feedback);
         }
+        RCLCPP_INFO(this->get_logger(), "Orientation to goal completed.");
+        
+        // Move to target
+        float distance_delta = INFINITY;
+        while (distance_delta > 0.01) {
+            goal_handle->publish_feedback(feedback);
+            goal_direction = computeVectorAngle(
+                desired_pos_.x - current_pos_.x, 
+                desired_pos_.y - current_pos_.y);
+            angle_delta = goal_direction - current_pos_.theta;
+            distance_delta = std::sqrt(
+                std::pow(desired_pos_.x - current_pos_.x, 2) + 
+                std::pow(desired_pos_.y - current_pos_.y, 2));
+            RCLCPP_DEBUG(this->get_logger(), "Distance delta: %.2f", distance_delta);
+            vel_msg.linear.x = std::min(float(0.2), distance_delta);
+            vel_msg.angular.z = angle_delta;
+            publisher_->publish(vel_msg);
+        }
+        RCLCPP_INFO(this->get_logger(), "Translation to goal completed.");
+
+        // Final orientation pose
+        angle_delta = INFINITY;
+        vel_msg.linear.x = 0;
+        while (std::abs(angle_delta) > M_PI / 360) {
+            goal_handle->publish_feedback(feedback);
+            angle_delta = desired_pos_.theta * M_PI / 180 - current_pos_.theta;
+            RCLCPP_DEBUG(this->get_logger(), "Angle delta: %.2f", angle_delta);
+            vel_msg.angular.z = angle_delta;
+            publisher_->publish(vel_msg);
+        }
+        vel_msg.angular.z = 0;
+        RCLCPP_INFO(this->get_logger(), "Final goal pose completed.");
 
         // Send result
         auto result = std::make_shared<GoToPose::Result>();
